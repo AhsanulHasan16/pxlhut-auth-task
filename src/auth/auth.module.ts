@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { JwtModule } from "@nestjs/jwt";
+import { JwtModule, JwtService } from "@nestjs/jwt";
 import { UserModule } from "src/user/user.module";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
@@ -19,7 +19,20 @@ import { LocalStrategy } from "./strategies/local.strategy";
             inject: [ConfigService],
         }),
     ],
-    providers: [AuthService, JwtStrategy, LocalStrategy],
+    providers: [AuthService, JwtStrategy, LocalStrategy,
+        {
+            provide: 'JWT_REFRESH_TOKEN',
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => {
+                return new JwtService({
+                    secret: configService.get('JWT_REFRESH_SECRET'),
+                    signOptions: {
+                        expiresIn: configService.get('JWT_REFRESH_EXPIRES_IN'),
+                    },
+                });
+            },
+        },
+    ],
     controllers: [AuthController],
 })
 export class AuthModule { }

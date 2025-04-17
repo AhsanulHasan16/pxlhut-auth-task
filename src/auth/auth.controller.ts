@@ -3,10 +3,13 @@ import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/user/dto/CreateUser.dto";
 import { AuthGuard } from "@nestjs/passport";
 import { Throttle } from "@nestjs/throttler";
+import { UserService } from "src/user/user.service";
 
 @Controller('auth')
 export class AuthController { 
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService,
+        private userService: UserService,
+    ) {}
     
     @Post('register')
     async register(@Body() registerDto: CreateUserDto) {
@@ -24,5 +27,18 @@ export class AuthController {
     @Get('me')
     getProfile(@Request() req) {
         return req.user;
+    }
+
+    @Post('refresh')
+    async refreshTokens(@Body() body: { refreshToken: string }) {
+        const user = await this.authService.refresh(body.refreshToken);
+        return user;
+    }
+
+    @Post('logout')
+    @UseGuards(AuthGuard('jwt'))
+    async logout(@Request() req) {
+    await this.userService.updateRefreshToken(req.user.userId, null);
+        return { message: 'Logged out successfully' };
     }
 }
